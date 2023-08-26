@@ -13,17 +13,17 @@ class AndroHelper:
     def __init__(self, apk_path, output_dir):
         self.apk_path = apk_path
         # output directory
-        self.output_dir = output_dir + "/"
-        self.packed_files = dict()
+        self.output_dir = f"{output_dir}/"
+        self.packed_files = {}
         self.a, self.d, self.dx = AnalyzeAPK(self.apk_path)
-        self.detected_malware = dict()
+        self.detected_malware = {}
 
     def analyze(self):
-        self.packed_files = dict()
+        self.packed_files = {}
         self.malware_detect()
 
         for file in self.a.get_files():
-            file_type = check_header(self.a.get_file(file)[0:4].hex())
+            file_type = check_header(self.a.get_file(file)[:4].hex())
 
             if file_type == "JAR":
                 write_file_to_dir(self.output_dir, file.split("/")[-1], a.get_file(file))

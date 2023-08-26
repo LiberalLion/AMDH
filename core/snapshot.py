@@ -13,38 +13,41 @@ class Snapshot:
         self.adb_instance = adb_instance
         self.out_dir = out_dir
         self.app_type = app_type
-        self.report = dict()
+        self.report = {}
         self.snapshot_file = snapshot_file
         self.backup = backup
-        self.restore_report = dict()
+        self.restore_report = {}
 
     def snapshot_packages(self):
         packages = self.adb_instance.list_installed_packages(self.app_type)
-        self.report["apps"] = dict()
+        self.report["apps"] = {}
         for package in packages:
             dumpsys_package = self.adb_instance.dumpsys(['package', package])
-            self.report["apps"][package] = dict()
-            self.report["apps"][package]["firstInstallTime"] = self.adb_instance.get_package_first_install_time(package)
+            self.report["apps"][package] = {
+                "firstInstallTime": self.adb_instance.get_package_first_install_time(
+                    package
+                )
+            }
             self.report["apps"][package]["lastUpdateTime"] = self.adb_instance.get_package_last_update_time(package)
             self.report["apps"][package]["grantedPermissions"] = self.adb_instance.get_req_perms_dumpsys_package(
                                                                                                         dumpsys_package)
 
-            if package in self.adb_instance.dumpsys(["device_policy"]):
-                self.report["apps"][package]["deviceAdmin"] = True
-            else:
-                self.report["apps"][package]["deviceAdmin"] = False
-
+            self.report["apps"][package][
+                "deviceAdmin"
+            ] = package in self.adb_instance.dumpsys(["device_policy"])
             if self.backup and "ALLOW_BACKUP" in re.search(r"flags=(.*)", dumpsys_package).group(1):
                 # Application allow backup
                 # TODO: backup password
-                output = self.out_dir + "/" + package + ".ab"
+                output = f"{self.out_dir}/{package}.ab"
                 self.__backup__(package, output)
-                self.report["apps"][package]["backup"] = package + ".ab"
+                self.report["apps"][package]["backup"] = f"{package}.ab"
 
             # Dump apk
             try:
-                self.adb_instance.dump_apk_from_device(package, self.out_dir + "/" + package + ".apk")
-                self.report["apps"][package]["apk"] = package + ".apk"
+                self.adb_instance.dump_apk_from_device(
+                    package, f"{self.out_dir}/{package}.apk"
+                )
+                self.report["apps"][package]["apk"] = f"{package}.apk"
             except Exception as e:
                 # cannot dump APK file
                 continue
@@ -52,7 +55,7 @@ class Snapshot:
         return self.report["apps"]
 
     def snapshot_settings(self):
-        self.report["settings"] = dict()
+        self.report["settings"] = {}
         global_settings = self.adb_instance.get_all_settings_section("global")
         self.report["settings"]["global"] = dict(x.split("=", 1) for x in global_settings.split("\n") if x.strip())
 
@@ -64,7 +67,7 @@ class Snapshot:
 
     def snapshot_sms(self):
         sms_ids = self.adb_instance.get_content_sms_projection("_id", "1=1")
-        self.report["sms"] = dict()
+        self.report["sms"] = {}
         if not sms_ids or "No result found." in sms_ids:
             return self.report["sms"]
 
@@ -73,18 +76,33 @@ class Snapshot:
                 break
             sms_id = self.__remove_row_projection__(sms_id)
 
-            self.report["sms"][sms_id] = dict()
+            self.report["sms"][sms_id] = {}
 
-            address = self.__remove_row_projection__(self.adb_instance.get_content_sms_projection(
-                                                                                "address", "'_id=" + sms_id + "'"))
-            date = self.__remove_row_projection__(self.adb_instance.get_content_sms_projection(
-                                                                                "date", "'_id=" + sms_id + "'"))
-            date_sent = self.__remove_row_projection__(self.adb_instance.get_content_sms_projection(
-                                                                                "date_sent", "'_id=" + sms_id + "'"))
-            body = self.__remove_row_projection__(self.adb_instance.get_content_sms_projection(
-                                                                                "body", "'_id=" + sms_id + "'"))
-            seen = self.__remove_row_projection__(self.adb_instance.get_content_sms_projection(
-                                                                                "seen", "'_id=" + sms_id + "'"))
+            address = self.__remove_row_projection__(
+                self.adb_instance.get_content_sms_projection(
+                    "address", f"'_id={sms_id}'"
+                )
+            )
+            date = self.__remove_row_projection__(
+                self.adb_instance.get_content_sms_projection(
+                    "date", f"'_id={sms_id}'"
+                )
+            )
+            date_sent = self.__remove_row_projection__(
+                self.adb_instance.get_content_sms_projection(
+                    "date_sent", f"'_id={sms_id}'"
+                )
+            )
+            body = self.__remove_row_projection__(
+                self.adb_instance.get_content_sms_projection(
+                    "body", f"'_id={sms_id}'"
+                )
+            )
+            seen = self.__remove_row_projection__(
+                self.adb_instance.get_content_sms_projection(
+                    "seen", f"'_id={sms_id}'"
+                )
+            )
 
             self.report["sms"][sms_id] = {"address": address, "date": date, "date_sent": date_sent, "body": body,
                                           "seen": seen}
@@ -93,21 +111,18 @@ class Snapshot:
 
     def snapshot_contacts(self):
         contacts_result = self.adb_instance.get_content_contacts()
-        self.report["contacts"] = dict()
+        self.report["contacts"] = {}
 
         if not contacts_result or "No result found." in contacts_result:
             return self.report["contacts"]
 
-        id_contact = 1
-        for contact in re.split("Row: [0-9]* ", contacts_result):
+        for id_contact, contact in enumerate(re.split("Row: [0-9]* ", contacts_result), start=1):
             self.report["contacts"][str(id_contact)] = \
-                dict(map(str.strip, sub.split('=', 1)) for sub in contact.strip().split(', ') if '=' in sub)
-            id_contact += 1
-
+                    dict(map(str.strip, sub.split('=', 1)) for sub in contact.strip().split(', ') if '=' in sub)
         return self.report["contacts"]
 
     def get_report(self):
-        self.report = dict()
+        self.report = {}
         if self.backup:
             self.snapshot_packages()
             self.snapshot_settings()
@@ -144,30 +159,33 @@ class Snapshot:
 
         current_apps = self.snapshot_packages()
 
-        apps_exist_in_snap = dict()
-        new_installed_apps = dict()
-        uninstalled_apps = dict()
+        apps_exist_in_snap = {}
+        new_installed_apps = {}
+        uninstalled_apps = {}
 
         for installed_app in current_apps.keys():
             if installed_app in snap_apps:
-                apps_exist_in_snap.update({installed_app: current_apps[installed_app]})
+                apps_exist_in_snap[installed_app] = current_apps[installed_app]
             else:
-                new_installed_apps.update({installed_app: current_apps[installed_app]})
+                new_installed_apps[installed_app] = current_apps[installed_app]
 
         if len(snap_apps) > len(current_apps):
-            uninstalled_apps.update({app: snap_apps[app] for app in set(snap_apps) - set(current_apps)})
+            uninstalled_apps |= {
+                app: snap_apps[app] for app in set(snap_apps) - set(current_apps)
+            }
         else:
-            uninstalled_apps.update({app: current_apps[app] for app in set(current_apps) - set(snap_apps)})
+            uninstalled_apps |= {
+                app: current_apps[app]
+                for app in set(current_apps) - set(snap_apps)
+            }
 
-        report = dict()
-        report["new_installed_apps"] = new_installed_apps
-        report["apps_exist_in_snap"] = apps_exist_in_snap
-        report["uninstalled_apps"] = uninstalled_apps
-        return report
+        return {
+            "new_installed_apps": new_installed_apps,
+            "apps_exist_in_snap": apps_exist_in_snap,
+            "uninstalled_apps": uninstalled_apps,
+        }
 
     def cmp_snapshot_settings(self):
-        changed_keys = dict()
-
         with open(self.snapshot_file) as json_file:
             snap_settings = json.load(json_file)["settings"]
 
@@ -178,9 +196,7 @@ class Snapshot:
         current_system_settings = dict(x.split("=", 1) for x in
                                        self.adb_instance.get_all_settings_section("system").split("\n") if x.strip())
 
-        # Global settings
-        changed_keys["global"] = []
-
+        changed_keys = {"global": []}
         for key in snap_settings["global"].keys():
             if key in current_global_settings:
                 current_value = current_global_settings[key]
@@ -218,10 +234,10 @@ class Snapshot:
 
         snapshot_path = Path(self.snapshot_file).parent
 
-        self.restore_report["apps"] = dict()
+        self.restore_report["apps"] = {}
         self.restore_apps(snapshot_path, snap_apps)
 
-        self.restore_report["settings"] = dict()
+        self.restore_report["settings"] = {}
         self.restore_settings(snap_settings)
 
         return self.restore_report
@@ -241,20 +257,20 @@ class Snapshot:
 
     def restore_apps(self, snapshot_path, dict_apps):
         for app in dict_apps:
-            self.restore_report["apps"][app] = dict()
+            self.restore_report["apps"][app] = {}
             if "apk" in dict_apps[app].keys():
                 try:
-                    self.adb_instance.install_app(str(snapshot_path) + "/" + dict_apps[app]['apk'])
+                    self.adb_instance.install_app(f"{str(snapshot_path)}/" + dict_apps[app]['apk'])
                     self.restore_report["apps"][app]["install"] = "success"
                 except Exception as e:
-                    self.restore_report["apps"][app]["install"] = "Failed: " + str(e)
+                    self.restore_report["apps"][app]["install"] = f"Failed: {str(e)}"
 
             if "backup" in dict_apps[app].keys():
                 try:
-                    self.__restore__(str(snapshot_path) + "/" + dict_apps[app]['backup'])
+                    self.__restore__(f"{str(snapshot_path)}/" + dict_apps[app]['backup'])
                     self.restore_report["apps"][app]["backup"] = "restored"
                 except Exception as e:
-                    self.restore_report["apps"][app]["backup"] = "Failed :" + str(e)
+                    self.restore_report["apps"][app]["backup"] = f"Failed :{str(e)}"
             else:
                 self.restore_report["apps"][app]["backup"] = "NOT FOUND"
 

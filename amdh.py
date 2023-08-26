@@ -140,7 +140,7 @@ def args_parse(print_help=False):
 
 def set_output_std():
     global out
-    if platform == "linux" or platform == "linux2":
+    if platform in ["linux", "linux2"]:
         out["std"] = Out("Linux")
     elif platform == "darwin":
         out["std"] = Out("Darwin")
@@ -154,25 +154,19 @@ def init_vars(arguments):
     global output_dir
     if arguments.output_dir:
         output_dir = arguments.output_dir
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
-    else:
-        if not os.path.isdir(output_dir):
-            os.makedirs(output_dir)
-
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
     global adb_path
     if arguments.adb_path:
         adb_path = arguments.adb_path
-    else:
-        if platform == "linux" or platform == "linux2" or platform == "Darwin":
-            if which("adb") is None and not os.path.isfile(ADB_BINARY):
-                out["std"].print_error("adb not found please use '-a' to specify the path")
-                args_parse(True)
-                sys.exit(1)
-        else:  # Windows
-            if which("adb") is None and not os.path.isfile(ADB_WINDOWS_PATH):
-                out["std"].print_error("adb not found please use '-a' to specify the path")
-                sys.exit(1)
+    elif platform in ["linux", "linux2", "Darwin"]:
+        if which("adb") is None and not os.path.isfile(ADB_BINARY):
+            out["std"].print_error("adb not found please use '-a' to specify the path")
+            args_parse(True)
+            sys.exit(1)
+    elif which("adb") is None and not os.path.isfile(ADB_WINDOWS_PATH):
+        out["std"].print_error("adb not found please use '-a' to specify the path")
+        sys.exit(1)
 
     global devices
     if arguments.devices:
@@ -198,34 +192,19 @@ def init_vars(arguments):
     # Related to scan
     #   scan settings
     global scan_settings
-    scan_settings = False
-    if arguments.sS:
-        scan_settings = True
-
+    scan_settings = bool(arguments.sS)
     #   scan applications
     global scan_applications
-    scan_applications = False
-    if arguments.sA:
-        scan_applications = True
-
+    scan_applications = bool(arguments.sA)
     # Hardening param
     global harden
-    harden = False
-    if arguments.H:
-        harden = True
-
+    harden = bool(arguments.H)
     # list applications param
     global list_apps
-    list_apps = False
-    if arguments.l:
-        list_apps = True
-
+    list_apps = bool(arguments.l)
     # list running users processes
     global list_processes
-    list_processes = False
-    if arguments.P:
-        list_processes = True
-
+    list_processes = bool(arguments.P)
     # Related to snapshot
     global snapshot
     snapshot = False
@@ -271,31 +250,25 @@ def init_vars(arguments):
             print("Application type invalid")
 
     global revoke
-    revoke = False
-    if arguments.R:
-        revoke = True
-
+    revoke = bool(arguments.R)
     global rm_admin_recv
-    rm_admin_recv = False
-    if arguments.rar:
-        rm_admin_recv = True
-
+    rm_admin_recv = bool(arguments.rar)
     if app_type.value == 'e':
         out["std"].print_info("Scanning system apps may takes a while ...")
 
 
 def process_settings(adb_instance, device_id):
-    if harden:
-        settings_check = Settings(SETTINGS_FILE, adb_instance, True, out[device_id])
-    else:
-        settings_check = Settings(SETTINGS_FILE, adb_instance, out=out[device_id])
-
     if scan_settings:
 
+        settings_check = (
+            Settings(SETTINGS_FILE, adb_instance, True, out[device_id])
+            if harden
+            else Settings(SETTINGS_FILE, adb_instance, out=out[device_id])
+        )
         with open(f"{output_dir}/{device_id}_report_settings.json", 'w') as fp:
             json.dump(settings_check.check(), fp, indent=4)
 
-        out["std"].print_info("Report generated: %s_report_settings.json" % device_id)
+        out["std"].print_info(f"Report generated: {device_id}_report_settings.json")
 
 
 def process_applications(adb_instance, device_id):

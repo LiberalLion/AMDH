@@ -29,57 +29,57 @@ class Out:
             self.log.write("[-] INFO: %s\n" % message)
             return
 
-        if self.platform == "Linux" or self.platform == "Darwin":
-            print(bcolors.INFO + "[-] INFO: " + bcolors.ENDC + f"{message}" )
+        if self.platform in ["Linux", "Darwin"]:
+            print(f"{bcolors.INFO}[-] INFO: {bcolors.ENDC}" + f"{message}")
         else:
-            print("[-] INFO: " + f"{message}")
+            print(f"[-] INFO: {message}")
 
     def print_warning(self, message):
         if self.log:
             self.log.write("[!] WARNING: %s\n" % message)
             return
 
-        if self.platform == "Linux" or self.platform == "Darwin":
-            print(bcolors.WARNING + "[!] WARNING: " + f"{message}" + bcolors.ENDC)
+        if self.platform in ["Linux", "Darwin"]:
+            print(f"{bcolors.WARNING}[!] WARNING: " + f"{message}" + bcolors.ENDC)
         else:
-            print("[!] WARNING: " + f"{message}")
+            print(f"[!] WARNING: {message}")
 
     def print_warning_header(self, message):
         if self.log:
             self.log.write("[!] WARNING: %s\n" % message)
             return
 
-        if self.platform == "Linux" or self.platform == "Darwin":
-            print(bcolors.WARNING_HEADER + "[!]  " + f"{message}" + bcolors.ENDC)
+        if self.platform in ["Linux", "Darwin"]:
+            print(f"{bcolors.WARNING_HEADER}[!]  " + f"{message}" + bcolors.ENDC)
         else:
-            print("[!] WARNING: " + f"{message}")
+            print(f"[!] WARNING: {message}")
 
     def print_error(self, message):
         if self.log:
             self.log.write("[X] ERROR: %s\n" % message)
             return
 
-        if self.platform == "Linux" or self.platform == "Darwin":
-            print(bcolors.FAIL + "[X] ERROR: " + f"{message}" + bcolors.ENDC)
+        if self.platform in ["Linux", "Darwin"]:
+            print(f"{bcolors.FAIL}[X] ERROR: " + f"{message}" + bcolors.ENDC)
         else:
-            print("[X] ERROR: " + f"{message}")
+            print(f"[X] ERROR: {message}")
 
     def print_success(self, message):
         if self.log:
             self.log.write("[+] OK: %s\n" % message)
             return
 
-        if self.platform == "Linux" or self.platform == "Darwin":
-            print(bcolors.OKGREEN + "[+] OK: " + f"{message}" + bcolors.ENDC)
+        if self.platform in ["Linux", "Darwin"]:
+            print(f"{bcolors.OKGREEN}[+] OK: " + f"{message}" + bcolors.ENDC)
         else:
-            print("[+] OK: " + f"{message}")
+            print(f"[+] OK: {message}")
 
     def print_high_warning(self, message):
         if self.log:
             self.log.write("[!] WARNING (HIGH): %s\n" % message)
             return
 
-        if self.platform == "Linux" or self.platform == "Darwin":
-            print(bcolors.FAIL + "[!] WARNING: " + f"{message}" + bcolors.ENDC)
+        if self.platform in ["Linux", "Darwin"]:
+            print(f"{bcolors.FAIL}[!] WARNING: " + f"{message}" + bcolors.ENDC)
         else:
-            print("[!] WARNING (HIGH): %s" % message)
+            print(f"[!] WARNING (HIGH): {message}")

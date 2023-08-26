@@ -32,7 +32,7 @@ class App:
             if not os.path.isdir(self.out_dir):
                 os.mkdir(self.out_dir)
             try:
-                out_file = self.out_dir + "/" + self.package_name + ".apk"
+                out_file = f"{self.out_dir}/{self.package_name}.apk"
                 self.adb_instance.dump_apk_from_device(self.package_name, out_file)
             except Exception as e:
                 return None, None, None, None
@@ -67,12 +67,12 @@ class App:
 
     # check if package_name is device owner
     def is_app_device_owner(self):
-        if self.package_name in self.device_policy_out:
-            return True
-        return False
+        return self.package_name in self.device_policy_out
 
     def remove_device_admin_for_app(self):
-        device_admin_receivers = re.findall(r"(" + self.package_name + ".*):", self.device_policy_out)
+        device_admin_receivers = re.findall(
+            f"({self.package_name}.*):", self.device_policy_out
+        )
         for device_admin_receiver in device_admin_receivers:
             try:
                 self.adb_instance.remove_dpm(device_admin_receiver)
@@ -105,7 +105,9 @@ class App:
         for nb in malware_perms["combinations"]:
             for p in malware_perms["combinations"][nb]:
 
-                if set(p["permissions"]).issubset(set([item.split(".")[-1] for item in perms])):
+                if set(p["permissions"]).issubset(
+                    {item.split(".")[-1] for item in perms}
+                ):
                     self.malware_confidence = self.malware_confidence + 1
 
         dict_all_perms = malware_perms["all"]
@@ -124,11 +126,11 @@ class App:
             if not os.path.isdir(self.out_dir):
                 os.mkdir(self.out_dir)
 
-            out_file = self.out_dir + "/" + self.package_name + ".apk"
+            out_file = f"{self.out_dir}/{self.package_name}.apk"
             self.adb_instance.dump_apk_from_device(self.package_name, out_file)
 
             # output directory for embedded files: "out_dir/package_name/"
-            androhelper = AndroHelper(out_file, self.out_dir + "/" + self.package_name)
+            androhelper = AndroHelper(out_file, f"{self.out_dir}/{self.package_name}")
 
             return androhelper.analyze()
 
@@ -136,7 +138,4 @@ class App:
         with open(main.MALWARE_PACKAGES_FILE) as json_file:
             malware_packages = json.load(json_file)
 
-        if self.package_name in malware_packages["packages"]:
-            return True
-
-        return False
+        return self.package_name in malware_packages["packages"]

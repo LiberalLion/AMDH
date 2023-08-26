@@ -18,7 +18,7 @@ class Settings:
         self.adb = adb
         self.harden = harden
         self.out = out
-        self.result_scan = dict()
+        self.result_scan = {}
 
     def check(self):
         with open(SETTINGS_FILE) as settingsFile:
@@ -76,9 +76,7 @@ class Settings:
         return self.result_scan
 
     def get_scan_report(self, section):
-        if self.result_scan[section]:
-            return self.result_scan[section]
-        return {}
+        return self.result_scan[section] if self.result_scan[section] else {}
 
     def append_key_to_result_scan_dict(self, key, value):
         if key in self.result_scan:
